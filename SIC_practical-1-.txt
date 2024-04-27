@@ -1,0 +1,171 @@
+# Practical 1A  - OSPF
+
+R1(config)#router ospf 1
+R1(config-router)#network 192.168.1.0 0.0.0.255 area 0
+R1(config-router)#network 10.1.1.0 0.0.0.3 area 0
+
+R2(config-router)#router ospf 2
+R2(config-router)#network 10.2.2.0 0.0.0.3 area 0
+R2(config-router)#network 10.1.1.0 0.0.0.3 area 0
+
+R3(config-router)#router ospf 3
+R3(config-router)#network 192.168.3.0 0.0.0.3 area 0
+R3(config-router)#network 10.2.2.0 0.0.0.3 area 0
+
+# Practical 1B  - MD5
+
+R1(config)#router ospf 1
+R1(config-router)#area 0 authentication message-digest
+R1(config-router)#interface s0/0/0
+R1(config-if)#ip ospf message-digest-key 1 md5 MD5pa55
+
+R2(config)#router ospf 2
+R2(config-router)#area 0 authentication message-digest
+R2(config-router)#interface s0/0/0
+R2(config-if)#ip ospf message-digest-key 1 md5 MD5pa55
+R2(config-if)#interface s0/0/1
+R2(config-if)#ip ospf message-digest-key 1 md5 MD5pa55
+
+R3(config)#router ospf 3
+R3(config-router)#area 0 authentication message-digest
+R3(config-if)#interface s0/0/1
+R3(config-if)#ip ospf message-digest-key 1 md5 MD5pa55
+
+R1#show ip ospf interface
+R2#show ip ospf interface
+R3#show ip ospf interface
+
+# Practical 1C  - NTP Server
+
+R1(config)#ntp server 192.168.1.6
+R1(config)#ntp update-calendar
+R1(config)#ntp authenticate
+R1(config)#ntp trusted-key 1
+R1(config)#ntp authentication-key 1 md5 NTPpa55
+R1(config)#service timestamps log datetime msec
+
+R2(config)#ntp server 192.168.1.6
+R2(config)#ntp update-calendar
+R2(config)#ntp authenticate
+R2(config)#ntp trusted-key 1
+R2(config)#ntp authentication-key 1 md5 NTPpa55
+R2(config)#service timestamps log datetime msec
+
+R3(config)#ntp server 192.168.1.6
+R3(config)#ntp update-calendar
+R3(config)#ntp authenticate
+R3(config)#ntp trusted-key 1
+R3(config)#ntp authentication-key 1 md5 NTPpa55
+R3(config)#service timestamps log datetime msec
+
+R1#show clock
+
+# Practical 1D  - Syslog server
+
+R1(config)#logging host 192.168.1.6
+R2(config)#logging host 192.168.1.6
+R3(config)#logging host 192.168.1.6
+
+# Practical 1D  - SSH
+
+R3(config)#ip domain-name ccnasecurity.com
+R3(config)#username SSHadmin privilege 15 secret ciscosshpa55
+R3(config)#line vty 0 4 
+R3(config-line)#login local
+R3(config-line)#transport input ssh
+R3(config-line)#crypto key zeroize rsa
+R3(config)#crypto key generate rsa
+How many bits in the modulus [512]: 1024
+R3#show ip ssh
+R3(config)#ip ssh time-out 90
+R3(config)#ip ssh authentication-retries 2
+R3(config)#ip ssh version 2
+R2#ssh -v 2 -l SSHadmin 10.2.2.1
+
+# Practical 2 -  Configure AAA Authentication on Cisco Routers 
+
+R1(config)#line vty 0 4
+R1(config-line)#password admin
+R1(config-line)#login
+R1(config-line)#router ospf 1
+R1(config-router)#network 192.168.1.0 0.0.0.255 area 0
+R1(config-router)#network 10.1.1.0 0.0.0.255 area 0
+
+R2(config)#line vty 0 4
+R2(config-line)#password admin
+R2(config-line)#login
+R2(config-line)#router ospf 2
+R2(config-router)#network 192.168.2.0 0.0.0.255 area 0
+R2(config-router)#network 10.2.2.0 0.0.0.255 area 0
+R2(config-router)#network 10.1.1.0 0.0.0.255 area 0
+
+R3(config)#line vty 0 4
+R3(config-line)#password admin
+R3(config-line)#login
+R3(config-line)#router ospf 3
+R3(config-router)#network 192.168.3.0 0.0.0.255 area 0
+R3(config-router)#network 10.2.2.0 0.0.0.255 area 0
+
+R1(config-router)#username Admin1 secret adminpa55
+R1(config)#aaa new-model
+R1(config)#aaa authentication login default local
+R1(config)#line console 0
+R1(config-line)#login authentication default
+R1(config-line)#end
+R1#exit
+
+R1(config)#ip domain-name ccnasecurity.com
+R1(config)#crypto key generate rsa
+How many bits in the modulus [512]: 1024
+R1(config)#aaa authentication login SSH-LOGIN local
+R1(config)#line vty 0 4
+R1(config-line)#login authentication SSH-LOGIN
+R1(config-line)#transport input ssh
+R1(config-line)#end
+
+PC-A: ssh -l Admin1 192.168.1.1
+
+R2(config)#username Admin2 secret admin2pa55
+
+TACACS+ SERVER: 
+    
+    Network Configuration:
+        Client Name: R3
+        Client IP: 192.168.2.1
+        Secret: tacacspa55
+        ServerTyoe: Radius
+
+    User Setup:
+        username:Admin2
+        Password:admin2pa55
+        
+R2(config)#aaa new-model
+R2(config)#aaa authentication login default group tacacs+ local
+R2(config)#line console 0
+R2(config-line)#login authentication default
+R2(config-line)#end
+R2#exit
+
+R3(config)#username Admin3 secret admin3pa55
+R3(config)#aaa new-model
+R3(config)#aaa authentication login default group radius local
+R3(config)#line console 0
+R3(config-line)#login authentication default
+R3(config-line)#end
+R3#exit
+
+# Practical 3 - Configuring Extended ACLs - Scenario 1
+
+R1(config)#access-list 100 permit tcp 172.22.34.64 0.0.0.31 host 172.22.34.62 eq ftp 
+R1(config)#access-list 100 permit icmp 172.22.34.64 0.0.0.31 host 172.22.34.62
+R1(config)#interface gigabitEthernet 0/0
+R1(config-if)#ip access-group 100 in
+
+PC1: ftp 172.22.34.62
+Username:cisco
+Password:cisco
+
+R1(config)#ip access-list extended HTTP_ONLY
+R1(config-ext-nacl)#permit tcp 172.22.34.96 0.0.0.15 host 172.22.34.62 eq www
+R1(config-ext-nacl)#permit icmp 172.22.34.96 0.0.0.15 host 172.22.34.62
+R1(config-if)#ip access-group HTTP_ONLY in
